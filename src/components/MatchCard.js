@@ -54,12 +54,24 @@ const MatchCard = () => {
     );
   }
 
+  // If no fighters are available at all
+  if (fighters.length === 0) {
+    return (
+      <div className="card-container">
+        <div className="no-more-cards">
+          <h3>No other fighters available yet</h3>
+          <p>You're one of the first users! Share with friends to find matches.</p>
+        </div>
+      </div>
+    );
+  }
+
   // If we've gone through all fighters
   if (currentFighterIndex >= fighters.length) {
     return (
       <div className="card-container">
         <div className="no-more-cards">
-          <h3>No more fighters in your area!</h3>
+          <h3>No more fighters to match with!</h3>
           <p>Check back later for more opponents</p>
         </div>
       </div>
@@ -86,14 +98,14 @@ const MatchCard = () => {
           id="reject-btn" 
           onClick={() => handleSwipe('left')}
         >
-          <i className="fas fa-times"></i>
+          ❌
         </button>
         <button 
           className="btn" 
           id="accept-btn" 
           onClick={() => handleSwipe('right')}
         >
-          <i className="fas fa-fist-raised"></i>
+          👊
         </button>
       </div>
     </>

@@ -7,15 +7,6 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
 
-// Initial fighter data (will be stored in Firebase)
-const initialFighters = [
-  { id: 1, name: "Mike", age: 28, contact: "mike@fighter.com", image: "https://randomuser.me/api/portraits/men/32.jpg" },
-  { id: 2, name: "Dave", age: 31, contact: "dave@fighter.com", image: "https://randomuser.me/api/portraits/men/22.jpg" },
-  { id: 3, name: "John", age: 25, contact: "john@fighter.com", image: "https://randomuser.me/api/portraits/men/62.jpg" },
-  { id: 4, name: "Steve", age: 29, contact: "steve@fighter.com", image: "https://randomuser.me/api/portraits/men/91.jpg" },
-  { id: 5, name: "Alex", age: 27, contact: "alex@fighter.com", image: "https://randomuser.me/api/portraits/men/45.jpg" }
-];
-
 export const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
@@ -49,20 +40,6 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     if (!userId) return;
     
-    // Setup fighters collection if it's empty
-    const setupInitialData = async () => {
-      const fightersCollection = collection(db, 'fighters');
-      const fightersSnapshot = await getDocs(fightersCollection);
-      
-      if (fightersSnapshot.empty) {
-        // Add initial fighters if none exist
-        console.log('Adding initial fighters to Firestore...');
-        for (const fighter of initialFighters) {
-          await addDoc(fightersCollection, fighter);
-        }
-      }
-    };
-    
     // Load user profile
     const loadUserProfile = async () => {
       const userProfilesCollection = collection(db, 'userProfiles');
@@ -77,14 +54,18 @@ export const UserProvider = ({ children }) => {
       }
     };
     
-    // Load fighters
+    // Load other users' profiles to swipe through
     const loadFighters = async () => {
-      const fightersCollection = collection(db, 'fighters');
-      const unsubscribe = onSnapshot(fightersCollection, (snapshot) => {
-        const fightersList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+      const userProfilesCollection = collection(db, 'userProfiles');
+      const unsubscribe = onSnapshot(userProfilesCollection, (snapshot) => {
+        // Filter out the current user's profile and already liked users
+        const fightersList = snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(profile => profile.userId !== userId && !likedFighters[profile.id]);
+        
         setFighters(fightersList);
       });
       
@@ -120,17 +101,15 @@ export const UserProvider = ({ children }) => {
         
         for (const docSnapshot of snapshot.docs) {
           const matchData = docSnapshot.data();
-          // Get fighter data for each match
-          const fighterDoc = await getDocs(doc(db, 'fighters', matchData.fighterId));
-          const fighter = fighterDoc ? fighterDoc.data() : null;
+          // Get fighter profile for each match
+          const fighterRef = doc(db, 'userProfiles', matchData.fighterId);
+          const fighterSnap = await getDocs(fighterRef);
+          const fighter = fighterSnap.exists() ? { id: fighterSnap.id, ...fighterSnap.data() } : null;
           
           if (fighter) {
             matchesList.push({
               id: docSnapshot.id,
-              fighter: {
-                id: matchData.fighterId,
-                ...fighter
-              },
+              fighter: fighter,
               date: matchData.date,
               arranged: matchData.arranged || false
             });
@@ -142,8 +121,6 @@ export const UserProvider = ({ children }) => {
       
       return unsubscribe;
     };
-    
-    setupInitialData();
     
     const unsubscribePromises = [
       loadUserProfile(),
@@ -157,7 +134,7 @@ export const UserProvider = ({ children }) => {
         promise.then(unsubscribe => unsubscribe && unsubscribe())
       );
     };
-  }, [userId]);
+  }, [userId, likedFighters]);
 
   // Update user profile
   const updateUserProfile = async (profile) => {
@@ -233,10 +210,17 @@ export const UserProvider = ({ children }) => {
       newLikedFighters[fighter.id] = true;
       setLikedFighters(newLikedFighters);
       
-      // Simulate whether the fighter also liked the user (50% chance)
-      const fighterLikesUser = Math.random() > 0.5;
+      // Check if this fighter has already liked the current user
+      const otherUserLikes = collection(db, 'likes');
+      const q = query(
+        otherUserLikes, 
+        where('userId', '==', fighter.userId),
+        where('fighterId', '==', userProfile.id)
+      );
+      const likeQuerySnapshot = await getDocs(q);
       
-      if (fighterLikesUser) {
+      // If mutual match, create a match
+      if (!likeQuerySnapshot.empty) {
         createMatch(fighter);
       }
       
