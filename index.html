@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FightR - Tinder for Fighting</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FightR</h1>
+            <p>Find your next opponent</p>
+        </header>
+
+        <main>
+            <div class="card-container" id="card-container">
+                <!-- Cards will be dynamically inserted here -->
+                <div class="no-more-cards hidden" id="no-more-cards">
+                    <p>No more fighters in your area!</p>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn" id="reject-btn"><i class="fas fa-times"></i></button>
+                <button class="btn" id="accept-btn"><i class="fas fa-fist-raised"></i></button>
+            </div>
+        </main>
+
+        <div class="profile-section">
+            <button id="upload-photo-btn" class="upload-btn">Upload Your Fighter Photo</button>
+            <input type="file" id="photo-upload" accept="image/*" style="display: none;">
+            <div id="user-profile" class="user-profile">
+                <p>Upload your photo to start finding fights</p>
+            </div>
+        </div>
+
+        <div id="match-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>IT'S A FIGHT MATCH!</h2>
+                <div class="match-profiles">
+                    <div class="match-profile-img" id="user-match-img"></div>
+                    <div class="match-profile-img" id="opponent-match-img"></div>
+                </div>
+                <p>Both of you think you can take each other on!</p>
+                <button id="arrange-fight-btn">Arrange Fight</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
