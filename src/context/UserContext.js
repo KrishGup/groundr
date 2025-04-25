@@ -5,7 +5,7 @@ import {
   query, where, orderBy 
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { signInAnonymously } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export const UserContext = createContext();
 
@@ -19,21 +19,25 @@ export const UserProvider = ({ children }) => {
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [currentMatch, setCurrentMatch] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // Initialize Firebase auth and check for a user session
+  // Listen for authentication state changes
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        // For a weekend project, we can use anonymous auth for simplicity
-        const userCredential = await signInAnonymously(auth);
-        setUserId(userCredential.user.uid);
-        setIsInitialized(true);
-      } catch (error) {
-        console.error("Error initializing auth:", error);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in
+        setUserId(user.uid);
+      } else {
+        // User is signed out
+        setUserId(null);
+        setUserProfile(null);
       }
-    };
+      setAuthLoading(false);
+      setIsInitialized(true);
+    });
     
-    initializeAuth();
+    // Cleanup subscription
+    return unsubscribe;
   }, []);
   
   // Load user profile from Firestore when userId is available
@@ -156,6 +160,7 @@ export const UserProvider = ({ children }) => {
         age: profile.age,
         contact: profile.contact,
         image: imageUrl,
+        email: auth.currentUser?.email || '',
         updatedAt: new Date().toISOString()
       };
       
@@ -301,7 +306,9 @@ export const UserProvider = ({ children }) => {
         showMatchModal,
         currentMatch,
         arrangeFight,
-        closeMatchModal
+        closeMatchModal,
+        userId,
+        authLoading
       }}
     >
       {children}
