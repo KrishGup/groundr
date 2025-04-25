@@ -17,7 +17,7 @@ To run this project locally:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/groundr.git
+git clone https://github.com/KrishGup/groundr.git
 
 # Navigate to the project directory
 cd groundr
@@ -48,14 +48,14 @@ This project is already configured for GitHub Pages deployment. Follow these ste
 1. Create a GitHub repository for your project
 2. Update the "homepage" field in package.json to match your GitHub username and repository name:
    ```
-   "homepage": "https://yourusername.github.io/groundr"
+   "homepage": "https://KrishGup.github.io/groundr"
    ```
 3. Initialize Git and push your code:
    ```bash
    git init
    git add .
    git commit -m "Initial commit"
-   git remote add origin https://github.com/yourusername/groundr.git
+   git remote add origin https://github.com/KrishGup/groundr.git
    git push -u origin main
    ```
 4. Deploy to GitHub Pages:
@@ -63,7 +63,7 @@ This project is already configured for GitHub Pages deployment. Follow these ste
    npm run deploy
    ```
 
-Your application will be available at `https://yourusername.github.io/groundr`
+Your application will be available at `https://KrishGup.github.io/groundr`
 
 ## Technologies Used
 

@@ -5,7 +5,7 @@ import {
   query, where, orderBy 
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { createUserWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
+import { signInAnonymously } from 'firebase/auth';
 
 // Initial fighter data (will be stored in Firebase)
 const initialFighters = [
