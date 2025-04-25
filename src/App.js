@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import MatchCard from './components/MatchCard';
 import Profile from './components/Profile';
 import Matches from './components/Matches';
