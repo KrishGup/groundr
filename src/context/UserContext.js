@@ -5,7 +5,7 @@ import {
   query, where, orderBy 
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 export const UserContext = createContext();
 
@@ -20,6 +20,9 @@ export const UserProvider = ({ children }) => {
   const [currentMatch, setCurrentMatch] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [profileRequired, setProfileRequired] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [messages, setMessages] = useState({});
 
   // Listen for authentication state changes
   useEffect(() => {
@@ -55,6 +58,10 @@ export const UserProvider = ({ children }) => {
           id: querySnapshot.docs[0].id,
           ...querySnapshot.docs[0].data()
         });
+        setProfileRequired(false);
+      } else {
+        setUserProfile(null);
+        setProfileRequired(true);
       }
     };
     
@@ -132,7 +139,59 @@ export const UserProvider = ({ children }) => {
           }
         }
         
-        setMatches(matchesList);
+        // Remove duplicates based on fighterId and date
+        const uniqueMatches = [];
+        const matchKeys = new Set();
+        
+        matchesList.forEach(match => {
+          const key = `${match.fighter.id}_${match.date}`;
+          if (!matchKeys.has(key)) {
+            matchKeys.add(key);
+            uniqueMatches.push(match);
+          }
+        });
+        
+        setMatches(uniqueMatches);
+      });
+      
+      return unsubscribe;
+    };
+
+    // Load messages for all matches
+    const loadMessages = async () => {
+      const messagesCollection = collection(db, 'messages');
+      const q = query(
+        messagesCollection,
+        where('participants', 'array-contains', userId),
+        orderBy('timestamp', 'desc')
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const messageData = {};
+        
+        snapshot.docs.forEach(doc => {
+          const message = doc.data();
+          const otherUserId = message.senderId === userId ? 
+            message.receiverId : message.senderId;
+          
+          if (!messageData[otherUserId]) {
+            messageData[otherUserId] = [];
+          }
+          
+          messageData[otherUserId].push({
+            id: doc.id,
+            ...message
+          });
+        });
+        
+        // Sort messages by timestamp
+        Object.keys(messageData).forEach(userId => {
+          messageData[userId].sort((a, b) => 
+            new Date(a.timestamp) - new Date(b.timestamp)
+          );
+        });
+        
+        setMessages(messageData);
       });
       
       return unsubscribe;
@@ -142,7 +201,8 @@ export const UserProvider = ({ children }) => {
       loadUserProfile(),
       loadFighters(),
       loadLikedFighters(),
-      loadMatches()
+      loadMatches(),
+      loadMessages()
     ];
     
     return () => {
@@ -176,6 +236,11 @@ export const UserProvider = ({ children }) => {
         contact: profile.contact || '',
         image: imageUrl || '',
         email: auth.currentUser?.email || '',
+        // New Tinder-like fields
+        height: profile.height || '',
+        weight: profile.weight || '',
+        training: profile.training || '',
+        bio: profile.bio || '',
         // Use an ISO string timestamp instead of a Date object
         updatedAt: new Date().toISOString()
       };
@@ -190,18 +255,24 @@ export const UserProvider = ({ children }) => {
         profileData.createdAt = new Date().toISOString(); // Also ISO string format
         
         const docRef = await addDoc(userProfilesCollection, profileData);
-        setUserProfile({
+        const newProfile = {
           id: docRef.id,
           ...profileData
-        });
+        };
+        
+        setUserProfile(newProfile);
+        setProfileRequired(false);
       } else {
         // Update existing profile
         const docRef = doc(db, 'userProfiles', querySnapshot.docs[0].id);
         await updateDoc(docRef, profileData);
-        setUserProfile({
+        
+        const updatedProfile = {
           id: querySnapshot.docs[0].id,
           ...profileData
-        });
+        };
+        
+        setUserProfile(updatedProfile);
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -211,13 +282,13 @@ export const UserProvider = ({ children }) => {
 
   // Handle rejecting a fighter (swipe left)
   const rejectFighter = () => {
-    if (currentFighterIndex >= fighters.length) return;
+    if (profileRequired || currentFighterIndex >= fighters.length) return;
     setCurrentFighterIndex(currentFighterIndex + 1);
   };
 
   // Handle accepting a fighter (swipe right)
   const acceptFighter = async () => {
-    if (!userId || currentFighterIndex >= fighters.length) return;
+    if (profileRequired || !userId || currentFighterIndex >= fighters.length) return;
     
     const fighter = fighters[currentFighterIndex];
     
@@ -361,9 +432,81 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  // Send message to another user
+  const sendMessage = async (receiverId, content) => {
+    if (!userId || !userProfile) return;
+    
+    try {
+      const messageData = {
+        senderId: userId,
+        senderName: userProfile.name,
+        senderImage: userProfile.image,
+        receiverId: receiverId,
+        content: content,
+        timestamp: new Date().toISOString(),
+        read: false,
+        participants: [userId, receiverId]
+      };
+      
+      await addDoc(collection(db, 'messages'), messageData);
+      return true;
+    } catch (error) {
+      console.error("Error sending message:", error);
+      return false;
+    }
+  };
+
+  // Mark messages as read
+  const markMessagesAsRead = async (otherUserId) => {
+    if (!userId || !messages[otherUserId]) return;
+    
+    try {
+      const updates = messages[otherUserId]
+        .filter(msg => msg.receiverId === userId && !msg.read)
+        .map(msg => {
+          const messageRef = doc(db, 'messages', msg.id);
+          return updateDoc(messageRef, { read: true });
+        });
+        
+      if (updates.length > 0) {
+        await Promise.all(updates);
+      }
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
+  };
+
+  // Logout function
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      return true;
+    } catch (error) {
+      console.error("Error signing out:", error);
+      return false;
+    }
+  };
+
   // Close the match modal
   const closeMatchModal = () => {
     setShowMatchModal(false);
+  };
+
+  // Set search query for filtering matches
+  const updateSearchQuery = (query) => {
+    setSearchQuery(query);
+  };
+
+  // Get filtered matches based on search query
+  const getFilteredMatches = () => {
+    if (!searchQuery.trim()) return matches;
+    
+    const lowerQuery = searchQuery.toLowerCase();
+    return matches.filter(match => 
+      match.fighter.name.toLowerCase().includes(lowerQuery) ||
+      (match.fighter.bio && match.fighter.bio.toLowerCase().includes(lowerQuery)) ||
+      (match.fighter.training && match.fighter.training.toLowerCase().includes(lowerQuery))
+    );
   };
 
   if (!isInitialized) {
@@ -381,12 +524,20 @@ export const UserProvider = ({ children }) => {
         acceptFighter,
         likedFighters,
         matches,
+        getFilteredMatches,
+        updateSearchQuery,
+        searchQuery,
         showMatchModal,
         currentMatch,
         arrangeFight,
         closeMatchModal,
         userId,
-        authLoading
+        authLoading,
+        profileRequired,
+        messages,
+        sendMessage,
+        markMessagesAsRead,
+        logout
       }}
     >
       {children}

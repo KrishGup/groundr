@@ -1,31 +1,41 @@
-import React, { useContext } from 'react';
-import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import React from 'react';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import MatchCard from './components/MatchCard';
 import Profile from './components/Profile';
 import Matches from './components/Matches';
+import Messages from './components/Messages';
 import MatchModal from './components/MatchModal';
 import Auth from './components/Auth';
+import Navigation from './components/Navigation';
 import { UserContext, UserProvider } from './context/UserContext';
 import './App.css';
 
 // Layout component with navigation
 const Layout = ({ children }) => {
-  const { userId } = useContext(UserContext);
+  const { userId, userProfile, profileRequired } = React.useContext(UserContext);
+  
+  // If user needs to create a profile and isn't on the profile page,
+  // redirect them to the profile page
+  const redirectToProfile = profileRequired && 
+    window.location.hash !== '#/profile' &&
+    window.location.hash !== '#/';
+  
+  React.useEffect(() => {
+    if (redirectToProfile) {
+      window.location.hash = '#/profile';
+    }
+  }, [redirectToProfile]);
   
   return (
     <div className="container">
       <header>
         <h1>GROUNDR</h1>
-        <p>Find your next opponent</p>
+        <p>Find your next boxing opponent</p>
       </header>
       
       {userId ? (
         <>
-          <nav className="nav">
-            <Link to="/" className="nav-link">Fighters</Link>
-            <Link to="/matches" className="nav-link">Matches</Link>
-            <Link to="/profile" className="nav-link">Profile</Link>
-          </nav>
+          <Navigation />
           {children}
         </>
       ) : (
@@ -60,6 +70,12 @@ function App() {
               <MatchModal />
             </Layout>
           } />
+          <Route path="/messages/:opponentId" element={
+            <Layout>
+              <Messages />
+            </Layout>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </UserProvider>

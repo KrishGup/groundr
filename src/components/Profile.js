@@ -7,7 +7,11 @@ const Profile = () => {
     name: '',
     age: '',
     contact: '',
-    image: null
+    image: null,
+    height: '',
+    weight: '',
+    training: '',
+    bio: ''
   });
   const [previewImage, setPreviewImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +24,11 @@ const Profile = () => {
         name: userProfile.name || '',
         age: userProfile.age || '',
         contact: userProfile.contact || '',
-        image: userProfile.image || null
+        image: userProfile.image || null,
+        height: userProfile.height || '',
+        weight: userProfile.weight || '',
+        training: userProfile.training || '',
+        bio: userProfile.bio || ''
       });
       setPreviewImage(userProfile.image || null);
     }
@@ -65,7 +73,7 @@ const Profile = () => {
     e.preventDefault();
     setMessage(null);
     
-    // Validate form
+    // Validate form - required fields
     if (!formData.name.trim()) {
       setMessage({type: 'error', text: 'Please enter your name'});
       return;
@@ -89,11 +97,6 @@ const Profile = () => {
 
     setIsLoading(true);
     try {
-      console.log('Saving profile with data:', {
-        ...formData,
-        image: formData.image instanceof File ? 'File object' : 'URL string'
-      });
-      
       await updateUserProfile(formData);
       setMessage({type: 'success', text: 'Profile updated successfully!'});
     } catch (error) {
@@ -116,7 +119,7 @@ const Profile = () => {
   return (
     <div className="profile-section">
       <h2>Your Fighter Profile</h2>
-      <p>Upload your photo and information to start finding fights</p>
+      <p>Complete your profile to start finding boxing opponents</p>
       
       {message && (
         <div className={`message ${message.type}`}>
@@ -137,6 +140,7 @@ const Profile = () => {
       </div>
       
       <form className="profile-form" onSubmit={handleSubmit}>
+        <h3>Required Information</h3>
         <div className="form-group">
           <label htmlFor="photo-upload">Fighter Photo</label>
           <input 
@@ -186,6 +190,59 @@ const Profile = () => {
           />
         </div>
         
+        <h3>Fighter Details (Optional)</h3>
+        <div className="form-group">
+          <label htmlFor="height">Height</label>
+          <input
+            type="text"
+            id="height"
+            name="height"
+            value={formData.height}
+            onChange={handleChange}
+            placeholder="e.g., 5'10'' or 178cm"
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="weight">Weight</label>
+          <input
+            type="text"
+            id="weight"
+            name="weight"
+            value={formData.weight}
+            onChange={handleChange}
+            placeholder="e.g., 160 lbs or 73 kg"
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="training">Training Experience</label>
+          <select
+            id="training"
+            name="training"
+            value={formData.training}
+            onChange={handleChange}
+          >
+            <option value="">Select experience level</option>
+            <option value="Beginner">Beginner (0-1 years)</option>
+            <option value="Intermediate">Intermediate (1-3 years)</option>
+            <option value="Advanced">Advanced (3-5 years)</option>
+            <option value="Professional">Professional (5+ years)</option>
+          </select>
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="bio">About Me</label>
+          <textarea
+            id="bio"
+            name="bio"
+            value={formData.bio}
+            onChange={handleChange}
+            placeholder="Tell potential opponents about yourself, your fighting style, goals, etc."
+            rows="4"
+          ></textarea>
+        </div>
+        
         <button 
           type="submit" 
           className="submit-btn" 
@@ -194,14 +251,6 @@ const Profile = () => {
           {isLoading ? 'Saving...' : (userProfile ? 'Update Profile' : 'Create Profile')}
         </button>
       </form>
-      
-      {/* Debug info */}
-      <div style={{marginTop: '30px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '5px', fontSize: '14px', textAlign: 'left'}}>
-        <h4>Profile Debug Info</h4>
-        <p>User ID: {userId || 'Not logged in'}</p>
-        <p>Existing Profile: {userProfile ? 'Yes' : 'No'}</p>
-        <p>Has Image: {formData.image ? 'Yes' : 'No'}</p>
-      </div>
     </div>
   );
 };
