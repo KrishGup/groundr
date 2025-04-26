@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { db, auth, storage } from '../firebase';
 import { 
-  collection, addDoc, getDocs, doc, updateDoc, onSnapshot,
+  collection, addDoc, getDocs, getDoc, doc, updateDoc, onSnapshot,
   query, where, orderBy 
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -107,16 +107,28 @@ export const UserProvider = ({ children }) => {
           const matchData = docSnapshot.data();
           // Get fighter profile for each match
           const fighterRef = doc(db, 'userProfiles', matchData.fighterId);
-          const fighterSnap = await getDocs(fighterRef);
-          const fighter = fighterSnap.exists() ? { id: fighterSnap.id, ...fighterSnap.data() } : null;
           
-          if (fighter) {
-            matchesList.push({
-              id: docSnapshot.id,
-              fighter: fighter,
-              date: matchData.date,
-              arranged: matchData.arranged || false
-            });
+          try {
+            // Use getDoc instead of getDocs for a single document
+            const fighterSnap = await getDoc(fighterRef);
+            
+            if (fighterSnap.exists()) {
+              const fighter = { 
+                id: fighterSnap.id, 
+                ...fighterSnap.data() 
+              };
+              
+              matchesList.push({
+                id: docSnapshot.id,
+                fighter: fighter,
+                date: matchData.date,
+                arranged: matchData.arranged || false
+              });
+            } else {
+              console.warn(`Fighter profile not found for match ${docSnapshot.id}`);
+            }
+          } catch (err) {
+            console.error(`Error loading fighter for match ${docSnapshot.id}:`, err.message);
           }
         }
         
@@ -154,13 +166,17 @@ export const UserProvider = ({ children }) => {
         imageUrl = await getDownloadURL(uploadResult.ref);
       }
       
+      // Convert age to number type explicitly
+      const ageValue = profile.age ? Number(profile.age) : null;
+      
       const profileData = {
         userId,
-        name: profile.name,
-        age: profile.age,
-        contact: profile.contact,
-        image: imageUrl,
+        name: profile.name || '',
+        age: ageValue,
+        contact: profile.contact || '',
+        image: imageUrl || '',
         email: auth.currentUser?.email || '',
+        // Use an ISO string timestamp instead of a Date object
         updatedAt: new Date().toISOString()
       };
       
@@ -171,6 +187,8 @@ export const UserProvider = ({ children }) => {
       
       if (querySnapshot.empty) {
         // Create new profile
+        profileData.createdAt = new Date().toISOString(); // Also ISO string format
+        
         const docRef = await addDoc(userProfilesCollection, profileData);
         setUserProfile({
           id: docRef.id,
@@ -187,6 +205,7 @@ export const UserProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Error updating profile:", error);
+      throw error; // Re-throw to allow component to handle
     }
   };
 
