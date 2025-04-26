@@ -559,6 +559,9 @@ header p {
   display: flex;
   flex-direction: column;
   background-color: #f8f8f8;
+  /* Make sure scroll behavior is standard and functions properly */
+  scroll-behavior: auto;
+  overflow-anchor: none; /* Prevent browser from adjusting scroll position automatically */
 }
 
 .messages-date-separator {

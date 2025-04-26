@@ -9,6 +9,8 @@ const Messages = () => {
   const [opponent, setOpponent] = useState(null);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
+  const firstLoadRef = useRef(true);
+  const lastMessageSenderRef = useRef(null);
   const navigate = useNavigate();
 
   // Use useMemo to avoid dependency changes on every render
@@ -59,10 +61,28 @@ const Messages = () => {
     return () => clearInterval(readInterval);
   }, [userId, opponentId, markMessagesAsRead]);
   
-  // Scroll to bottom when new messages arrive
+  // Modified scroll behavior: only scroll on first load or when user sends a message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conversationMessages]);
+    // Get the last message and its sender
+    const lastMessage = conversationMessages[conversationMessages.length - 1];
+    const lastSender = lastMessage?.senderId;
+    
+    // Only scroll if:
+    // 1. It's the first load of messages (firstLoadRef.current is true)
+    // 2. OR the last message was sent by the current user (which means they just sent it)
+    if (lastMessage && (firstLoadRef.current || lastSender === userId)) {
+      messagesEndRef.current?.scrollIntoView({ behavior: firstLoadRef.current ? 'auto' : 'smooth' });
+    }
+    
+    // Set first load to false after the first render with messages
+    if (conversationMessages.length > 0 && firstLoadRef.current) {
+      firstLoadRef.current = false;
+    }
+    
+    // Store the last message sender for comparison on next update
+    lastMessageSenderRef.current = lastSender;
+    
+  }, [conversationMessages, userId]);
   
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -218,9 +238,9 @@ const Messages = () => {
                   </React.Fragment>
                 );
               })}
+              <div ref={messagesEndRef} />
             </>
           )}
-          <div ref={messagesEndRef} />
         </div>
         
         <form className="message-form" onSubmit={handleSendMessage}>
