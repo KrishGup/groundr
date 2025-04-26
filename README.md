@@ -1,83 +1,64 @@
-# Groundr - Tinder for Fighting
+# GROUNDR - Find Your Next Boxing Opponent
 
-A React-based web application that mimics the Tinder swipe experience but for finding fighting opponents. Users can upload their photos and information, swipe through potential opponents, and arrange meetups for fistfights when there's a mutual match.
+A React-based web application that helps boxers and fighters connect with potential opponents. Users can create profiles, browse through potential opponents, and arrange meetups when there's a mutual match.
 
-## Features
+## Live Demo
 
-- Upload your fighter photo, name, age, and contact information
-- Swipe left on fighters you think would win against you
-- Swipe right on fighters you think you could beat
-- Get notified when there's a mutual match (both fighters think they can win)
-- Arrange fights with your matches
-- Responsive design for both mobile and desktop
+**Live App**: [https://krishgup.github.io/groundr/#/](https://krishgup.github.io/groundr/#/)
 
-## Installation
+> **Note**: The live application will be available online until July 26, 2025.
 
-To run this project locally:
+## Key Features
 
-```bash
-# Clone the repository
-git clone https://github.com/KrishGup/groundr.git
+### User Authentication
+- Create an account with email and password
+- Secure login system
+- Password recovery options
 
-# Navigate to the project directory
-cd groundr
+### Profile Management
+- Upload your fighter photo
+- Set your name, height, and weight
+- Specify your training background and experience level
+- Update your profile information at any time
 
-# Install dependencies
-npm install
+### Fighter Discovery
+- Browse through potential opponents with an intuitive card-based interface
+- Swipe right on fighters you're interested in matching with
+- Swipe left on fighters you want to skip
+- View detailed information about each potential opponent
 
-# Start the development server
-npm start
-```
+### Matching System
+- Get notified when there's a mutual match
+- View all your matches in the dedicated Matches section
+- No connections made until both parties express interest
 
-The application will open in your browser at http://localhost:3000
+### Messaging
+- Real-time messaging with your matches
+- Conversation history is saved and loaded automatically
+- Message read receipts
+- Send and receive messages to discuss potential meetups
+
+### Responsive Design
+- Fully functional on both mobile and desktop devices
+- Optimized user experience regardless of screen size
+- Touch-friendly interactions for mobile users
 
 ## How to Use
 
-1. First, navigate to the "Profile" tab and create your fighter profile
-2. Upload your photo and enter your name, age, and contact information
-3. Go to the "Fighters" tab to browse potential opponents
-4. Swipe left (or click X) to reject a fighter you think would beat you
-5. Swipe right (or click the fist icon) to accept a fighter you think you could beat
-6. When you get a match, you'll see a notification and can arrange a fight
-7. View all your matches in the "Matches" tab
-
-## Deployment to GitHub Pages
-
-This project is already configured for GitHub Pages deployment. Follow these steps:
-
-1. Create a GitHub repository for your project
-2. Update the "homepage" field in package.json to match your GitHub username and repository name:
-   ```
-   "homepage": "https://KrishGup.github.io/groundr"
-   ```
-3. Initialize Git and push your code:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin https://github.com/KrishGup/groundr.git
-   git push -u origin main
-   ```
-4. Deploy to GitHub Pages:
-   ```bash
-   npm run deploy
-   ```
-
-Your application will be available at `https://KrishGup.github.io/groundr`
+1. Create an account or log in with existing credentials
+2. Complete your fighter profile with relevant details
+3. Browse potential opponents by swiping through fighter cards
+4. When you get a match, you can message the other fighter
+5. Arrange details for your meetup through the messaging system
 
 ## Technologies Used
 
-- React 18
-- React Router DOM
-- React Swipeable
-- LocalStorage for data persistence
-- CSS3 for styling
-- GitHub Pages for hosting
+- React.js for the frontend interface
+- Firebase for authentication, database, and storage
+- React Router for navigation
+- CSS3 for styling and animations
+- Firestore for real-time messaging
 
 ## Disclaimer
 
-This application is created for demonstration purposes only. Always follow local laws and regulations regarding fighting, and remember that arranging fights in this manner may be illegal in many jurisdictions.
-
-## License
-
-MIT
+This application is created for demonstration purposes. Users are responsible for following all applicable laws and safety regulations when arranging boxing matches or sparring sessions.
