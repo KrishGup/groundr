@@ -57,6 +57,7 @@ const Auth = () => {
         error.code === 'auth/email-already-in-use' ? 'Email already in use. Try logging in.' :
         error.code === 'auth/weak-password' ? 'Password should be at least 6 characters.' :
         error.code === 'auth/invalid-email' ? 'Invalid email format.' :
+        error.code === 'auth/invalid-credential' ? 'Account not found. Please sign up instead.' :
         'An error occurred: ' + error.message
       );
     } finally {

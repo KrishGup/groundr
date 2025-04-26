@@ -259,19 +259,38 @@ export const UserProvider = ({ children }) => {
     if (!userId || !userProfile) return;
     
     try {
-      const matchData = {
+      // Create timestamp to use consistently for both match records
+      const matchTimestamp = new Date().toISOString();
+      
+      // 1. Create match record for the current user
+      const currentUserMatchData = {
         userId: userId,
         fighterId: fighter.id,
-        date: new Date().toISOString(),
-        arranged: false
+        date: matchTimestamp,
+        arranged: false,
+        matchedWith: fighter.userId // Store the opponent's userId for reference
       };
       
-      const docRef = await addDoc(collection(db, 'matches'), matchData);
+      const currentUserDocRef = await addDoc(collection(db, 'matches'), currentUserMatchData);
       
+      // 2. Create a corresponding match record for the opponent
+      const opponentMatchData = {
+        userId: fighter.userId, // The opponent's userId
+        fighterId: userProfile.id, // Current user is the fighter for opponent
+        date: matchTimestamp,
+        arranged: false,
+        matchedWith: userId // Store the current user's userId for reference
+      };
+      
+      await addDoc(collection(db, 'matches'), opponentMatchData);
+      
+      console.log('Created bidirectional match between users:', userId, 'and', fighter.userId);
+      
+      // 3. Update local state for current user's UI
       const match = {
-        id: docRef.id,
+        id: currentUserDocRef.id,
         fighter: fighter,
-        date: matchData.date,
+        date: matchTimestamp,
         arranged: false
       };
       
@@ -286,11 +305,51 @@ export const UserProvider = ({ children }) => {
   // Arrange fight with a matched fighter
   const arrangeFight = async (matchId) => {
     try {
+      // 1. Get the current match document
       const matchRef = doc(db, 'matches', matchId);
+      const matchSnap = await getDoc(matchRef);
+      
+      if (!matchSnap.exists()) {
+        console.error("Match not found:", matchId);
+        return;
+      }
+      
+      const matchData = matchSnap.data();
+      const opponentUserId = matchData.matchedWith;
+      
+      if (!opponentUserId) {
+        console.warn("Match does not have opponent user ID reference");
+      }
+      
+      // 2. Update current user's match
       await updateDoc(matchRef, {
-        arranged: true
+        arranged: true,
+        arrangedAt: new Date().toISOString()
       });
       
+      // 3. Find and update the opponent's corresponding match
+      if (opponentUserId) {
+        const matchesCollection = collection(db, 'matches');
+        const q = query(
+          matchesCollection, 
+          where('userId', '==', opponentUserId),
+          where('matchedWith', '==', userId)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          const opponentMatchRef = doc(db, 'matches', querySnapshot.docs[0].id);
+          await updateDoc(opponentMatchRef, {
+            arranged: true,
+            arrangedAt: new Date().toISOString()
+          });
+          console.log("Updated both sides of the match arrangement");
+        } else {
+          console.warn("Could not find corresponding match for opponent");
+        }
+      }
+      
+      // 4. Update local state
       const updatedMatches = matches.map(match => 
         match.id === matchId ? { ...match, arranged: true } : match
       );
