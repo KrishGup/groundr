@@ -12,7 +12,7 @@ import './App.css';
 
 // Layout component with navigation
 const Layout = ({ children }) => {
-  const { userId, userProfile, profileRequired } = React.useContext(UserContext);
+  const { userId, profileRequired } = React.useContext(UserContext);
   
   // If user needs to create a profile and isn't on the profile page,
   // redirect them to the profile page

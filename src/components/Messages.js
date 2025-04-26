@@ -1,9 +1,9 @@
-import React, { useState, useContext, useEffect, useRef } from 'react';
+import React, { useState, useContext, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserContext } from '../context/UserContext';
 
 const Messages = () => {
-  const { userId, userProfile, profileRequired, messages, sendMessage, markMessagesAsRead } = useContext(UserContext);
+  const { userId, profileRequired, messages, sendMessage, markMessagesAsRead } = useContext(UserContext);
   const { opponentId } = useParams();
   const [messageText, setMessageText] = useState('');
   const [opponent, setOpponent] = useState(null);
@@ -11,7 +11,10 @@ const Messages = () => {
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
-  const conversationMessages = messages[opponentId] || [];
+  // Use useMemo to avoid dependency changes on every render
+  const conversationMessages = useMemo(() => {
+    return messages[opponentId] || [];
+  }, [messages, opponentId]);
 
   // Load opponent details and mark messages as read
   useEffect(() => {
@@ -21,7 +24,7 @@ const Messages = () => {
       try {
         // Import these directly from firebase.js instead of dynamic import
         const { db } = await import('../firebase');
-        const { doc, getDoc, collection, query, where, getDocs } = await import('firebase/firestore');
+        const { collection, query, where, getDocs } = await import('firebase/firestore');
         
         // Query user profiles by userId (not document ID)
         const userProfilesCollection = collection(db, 'userProfiles');
